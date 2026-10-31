@@ -13,14 +13,9 @@ st.set_page_config(page_title="Tesis UBO - Detección OOD", layout="wide")
 
 st.markdown("""
 <style>
-    /* Forzar fondo blanco y texto oscuro */
     .stApp { background-color: #ffffff; color: #333333; }
     p, div, span, label { color: #333333 !important; }
-
-    /* Colores de títulos */
     h1, h2, h3 { color: #001A4D !important; }
-
-    /* Botones con color celeste UBO */
     .stButton>button {
         background-color: #00AEEF;
         color: white !important;
@@ -29,8 +24,6 @@ st.markdown("""
         border: none;
     }
     .stButton>button:hover { background-color: #008CBA; }
-
-    /* Cajas de resultado */
     .resultado-normal {
         background-color: #D4EDDA;
         color: #155724 !important;
@@ -67,7 +60,6 @@ NOMBRES_CLASES = {
     9: "Irregular (OOD)"
 }
 
-
 @st.cache_resource
 def load_model():
     file_id_model = "1RzDEkPJf-CGbA7LGMXg_HwmPNbq5YNP2"
@@ -85,17 +77,19 @@ def load_model():
 
 @st.cache_data
 def load_mahalanobis():
-    file_id_scores = "1DRQKn6Dq-MpYdZc1cH1oB4f3dlgctEuJ"
-    output_scores = "scores_temp.npz"
-    if not os.path.exists(output_scores):
+    # Cargar media, cov_inv y umbral desde el archivo .npz
+    file_id_params = "TU_FILE_ID_DE_MAHALANOBIS_PARAMS"  # ← Reemplaza con el ID real
+    output_params = "mahalanobis_params.npz"
+    if not os.path.exists(output_params):
         try:
-            gdown.download(f"https://drive.google.com/uc?id={file_id_scores}", output_scores, quiet=True)
-            scores = np.load(output_scores)
-            return np.mean(scores['maha_id']), np.eye(512)
+            gdown.download(f"https://drive.google.com/uc?id={file_id_params}", output_params, quiet=True)
+            params = np.load(output_params)
+            return params['media_global'], params['cov_inv'], float(params['umbral_maha'])
         except:
-            return np.zeros(512), np.eye(512)
-    scores = np.load(output_scores)
-    return np.mean(scores['maha_id']), np.eye(512)
+            # Fallback (no ideal): media cero, covarianza identidad, umbral 31.74
+            return np.zeros(512), np.eye(512), 31.74
+    params = np.load(output_params)
+    return params['media_global'], params['cov_inv'], float(params['umbral_maha'])
 
 def predecir_imagen(image, model, device, media, cov_inv):
     transform = transforms.Compose([
@@ -120,11 +114,8 @@ def predecir_imagen(image, model, device, media, cov_inv):
 
     return pred.item(), confianza.item(), dist_maha
 
-
 model, device = load_model()
-media_global, cov_inv = load_mahalanobis()
-UMBRAL_MAHA = 31.0
-
+media_global, cov_inv, UMBRAL_MAHA = load_mahalanobis()
 
 st.markdown("""
 <div style="text-align: center; margin-bottom: 30px;">
@@ -137,7 +128,6 @@ st.markdown("""
 st.title("Dashboard de Detección Out-of-Distribution")
 st.markdown("**Tesis:** Detección de Anomalías Morfológicas en Galaxias mediante Calibración Fina")
 
-
 tab1, tab2, tab3, tab4 = st.tabs(["Demo en Vivo", "Resultados", "Pipeline", "Glosario"])
 
 with tab1:
@@ -147,7 +137,6 @@ with tab1:
     uploaded_file = st.file_uploader("Elige una imagen (JPG/PNG)", type=["jpg", "png"])
 
     if uploaded_file is not None:
-       
         col_img, col_res = st.columns(2)
 
         with col_img:
@@ -165,21 +154,22 @@ with tab1:
                     if dist > UMBRAL_MAHA:
                         st.markdown(f'<div class="resultado-anomalia">ANOMALÍA DETECTADA<br>Clase: {nombre_clase}</div>', unsafe_allow_html=True)
                         st.write(f"**Confianza SoftMax:** {conf*100:.2f}%")
-                        st.write(f"**Distancia de Mahalanobis:** {dist:.2f} (Umbral: {UMBRAL_MAHA})")
+                        st.write(f"**Distancia de Mahalanobis:** {dist:.2f} (Umbral: {UMBRAL_MAHA:.2f})")
                         st.info("El modelo detectó que esta galaxia no pertenece a ninguna de las 8 clases conocidas. Probablemente sea una morfología anómala.")
                     else:
                         st.markdown(f'<div class="resultado-normal">GALAXIA NORMAL<br>Clase: {nombre_clase}</div>', unsafe_allow_html=True)
                         st.write(f"**Confianza SoftMax:** {conf*100:.2f}%")
-                        st.write(f"**Distancia de Mahalanobis:** {dist:.2f} (Umbral: {UMBRAL_MAHA})")
+                        st.write(f"**Distancia de Mahalanobis:** {dist:.2f} (Umbral: {UMBRAL_MAHA:.2f})")
                         st.success("La galaxia ha sido clasificada correctamente dentro de las 8 clases conocidas (In-Distribution).")
+
 with tab2:
     st.header("Resultados Comparativos del Estudio")
     st.write("Comparación del rendimiento de los métodos evaluados sobre el conjunto Test ID (1,800 imágenes).")
 
     data = {
         "Método": ["SoftMax (Baseline)", "IsoMaxPlus", "MC Dropout (Híbrido)", "Mahalanobis", "Energy Score"],
-        "Detección OOD (%)": [0.0, 9.87, 0.77, 47.27, 99.73],
-        "Falsos Positivos": ["-", "296/1800", "90/1800", "90/1800", "1710/1800"],
+        "Detección OOD (%)": [0.0, 21.23, 2.87, 60.80, 99.80],
+        "Falsos Positivos": ["-", "90/1800", "77/1800", "81/1800", "1712/1800"],
         "Conclusión": ["Ciego a OOD", "Detecta poco", "Ruido enmascara señal", "Óptimo equilibrio", "Demasiado agresivo"]
     }
     df = pd.DataFrame(data)
@@ -193,7 +183,7 @@ with tab2:
 
     st.markdown("---")
     st.subheader("Conclusión Principal")
-    st.info("La **Distancia de Mahalanobis** logró el mejor equilibrio: detectó casi la mitad de las anomalías (47.27%) manteniendo una tasa de falsos positivos aceptable (5%). El Energy Score, aunque detecta casi todo, es inviable por su altísima tasa de falsos positivos.")
+    st.info("La **Distancia de Mahalanobis** logró el mejor equilibrio: detectó el 60.80% de las anomalías manteniendo una tasa de falsos positivos del 4.50%. El Energy Score, aunque detecta casi todo (99.80%), es inviable por su altísima tasa de falsos positivos (95.11%).")
 
 with tab3:
     st.header("Pipeline Experimental")
@@ -202,7 +192,7 @@ with tab3:
     st.markdown("""
     1. **Ingesta y Preprocesamiento:** Carga del dataset Galaxy10 DECaLS (HDF5), split de 8 clases ID y 2 OOD, muestreo estratificado (12,000 ID / 3,000 OOD) y normalización a 224x224.
     2. **Modelado y Entrenamiento:** ResNet-34 preentrenada. Fase de *Feature Extraction* (5 épocas) y *Fine-Tuning* completo (5 épocas).
-    3. **Evaluación OOD:** Aplicación de IsoMaxPlus (prototipos), MC Dropout (varianza) y Mahalanobis (covarianza) sobre las características latentes.
+    3. **Evaluación OOD:** Aplicación de Score de Distancia a Prototipos, MC Dropout (varianza), Mahalanobis (covarianza) y Energy Score sobre las características latentes.
     4. **Generación de Evidencia:** Cálculo de métricas y generación de figuras.
     """)
 
@@ -215,7 +205,7 @@ with tab4:
     *   **Out-of-Distribution (OOD):** Datos que no pertenecen a la distribución de entrenamiento del modelo.
     *   **In-Distribution (ID):** Datos que sí pertenecen a las clases conocidas.
     *   **SoftMax:** Función de activación que normaliza las salidas en probabilidades.
-    *   **IsoMaxPlus:** Función de pérdida basada en distancias a prototipos.
+    *   **Score de Distancia a Prototipos:** Score de anomalía basado en la distancia euclidiana a los prototipos de clase (inspirado en IsoMaxPlus).
     *   **MC Dropout:** Técnica bayesiana para medir incertidumbre con múltiples pasadas.
     *   **Distancia de Mahalanobis:** Medida de distancia que considera la covarianza de los datos.
     *   **Energy Score:** Método de detección OOD basado en los logits crudos.
