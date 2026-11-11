@@ -177,7 +177,7 @@ with tab1:
                         st.write(f"**Confianza SoftMax (referencial):** {conf*100:.2f}%")
                         st.write(f"**Distancia de Mahalanobis:** {dist:.2f} (Umbral: {UMBRAL_MAHA:.2f})")
                         st.markdown(
-                            '<div class="caja-info-ood">ℹ️ El modelo detectó que esta galaxia no pertenece a ninguna de las 8 clases conocidas. La clasificación SoftMax interna se descarta por ser poco fiable en este caso.</div>',
+                            '<div class="caja-info-ood">El modelo detectó que esta galaxia no pertenece a ninguna de las 8 clases conocidas. La clasificación SoftMax interna se descarta por ser poco fiable en este caso.</div>',
                             unsafe_allow_html=True
                         )
                     else:
