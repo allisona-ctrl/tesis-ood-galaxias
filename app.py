@@ -52,6 +52,14 @@ st.markdown("""
         border: 1px solid #0d3d18;             
         font-size: 15px;  
      }
+      .caja-info-ood {
+        background-color: #001A4D;
+        color: #FFFFFF !important;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #000F2E;
+        font-size: 15px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
