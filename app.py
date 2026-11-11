@@ -44,6 +44,14 @@ st.markdown("""
         font-weight: bold;
         border: 1px solid #f5c6cb;
     }
+      .caja-exito {                              
+        background-color: #155724;           
+        color: #FFFFFF !important;            
+        padding: 15px;                          
+        border-radius: 8px;                     
+        border: 1px solid #0d3d18;             
+        font-size: 15px;  
+     }
 </style>
 """, unsafe_allow_html=True)
 
@@ -152,16 +160,23 @@ with tab1:
                     st.subheader("Resultado del Análisis")
 
                     if dist > UMBRAL_MAHA:
-                        st.markdown(f'<div class="resultado-anomalia">ANOMALÍA DETECTADA<br>Clase: {nombre_clase}</div>', unsafe_allow_html=True)
-                        st.write(f"**Confianza SoftMax:** {conf*100:.2f}%")
+                        st.markdown(
+                            '<div class="resultado-anomalia">ANOMALÍA DETECTADA<br>'
+                            '<span style="font-size: 16px; font-weight: normal;">Morfología desconocida (fuera de las 8 clases ID)</span>'
+                            '</div>',
+                            unsafe_allow_html=True
+                        )
+                        st.write(f"**Confianza SoftMax (referencial):** {conf*100:.2f}%")
                         st.write(f"**Distancia de Mahalanobis:** {dist:.2f} (Umbral: {UMBRAL_MAHA:.2f})")
-                        st.info("El modelo detectó que esta galaxia no pertenece a ninguna de las 8 clases conocidas. Probablemente sea una morfología anómala.")
+                        st.info("El modelo detectó que esta galaxia no pertenece a ninguna de las 8 clases conocidas. La clasificación SoftMax interna se descarta por ser poco fiable en este caso.")
                     else:
                         st.markdown(f'<div class="resultado-normal">GALAXIA NORMAL<br>Clase: {nombre_clase}</div>', unsafe_allow_html=True)
                         st.write(f"**Confianza SoftMax:** {conf*100:.2f}%")
                         st.write(f"**Distancia de Mahalanobis:** {dist:.2f} (Umbral: {UMBRAL_MAHA:.2f})")
-                        st.success("La galaxia ha sido clasificada correctamente dentro de las 8 clases conocidas (In-Distribution).")
-
+                        st.markdown(
+                            '<div class="caja-exito">✓ La galaxia ha sido clasificada correctamente dentro de las 8 clases conocidas (In-Distribution).</div>',
+                            unsafe_allow_html=True
+                        )
 with tab2:
     st.header("Resultados Comparativos del Estudio")
     st.write("Comparación del rendimiento de los métodos evaluados sobre el conjunto Test ID (1,800 imágenes).")
