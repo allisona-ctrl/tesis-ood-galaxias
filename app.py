@@ -185,7 +185,7 @@ with tab1:
                         st.write(f"**Confianza SoftMax:** {conf*100:.2f}%")
                         st.write(f"**Distancia de Mahalanobis:** {dist:.2f} (Umbral: {UMBRAL_MAHA:.2f})")
                         st.markdown(
-                            '<div class="caja-exito">✓ La galaxia ha sido clasificada correctamente dentro de las 8 clases conocidas (In-Distribution).</div>',
+                            '<div class="caja-exito"> La galaxia ha sido clasificada correctamente dentro de las 8 clases conocidas (In-Distribution).</div>',
                             unsafe_allow_html=True
                         )
 with tab2:
